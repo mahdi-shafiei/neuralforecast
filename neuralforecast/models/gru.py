@@ -25,8 +25,8 @@ class GRU(BaseModel):
 
     **Parameters:**<br>
     `h`: int, forecast horizon.<br>
-    `input_size`: int, maximum sequence length for truncated train backpropagation. Default -1 uses all history.<br>
-    `inference_input_size`: int, maximum sequence length for truncated inference. Default -1 uses all history.<br>
+    `input_size`: int, maximum sequence length for truncated train backpropagation. Default -1 uses 3 * horizon <br>
+    `inference_input_size`: int, maximum sequence length for truncated inference. Default None uses input_size history.<br>
     `encoder_n_layers`: int=2, number of layers for the GRU.<br>
     `encoder_hidden_size`: int=200, units for the GRU's hidden state size.<br>
     `encoder_activation`: Optional[str]=None, Deprecated. Activation function in GRU is frozen in PyTorch.<br>
@@ -38,6 +38,8 @@ class GRU(BaseModel):
     `futr_exog_list`: str list, future exogenous columns.<br>
     `hist_exog_list`: str list, historic exogenous columns.<br>
     `stat_exog_list`: str list, static exogenous columns.<br>
+    `exclude_insample_y`: bool=False, whether to exclude the target variable from the input.<br>
+    `recurrent`: bool=False, whether to produce forecasts recursively (True) or direct (False).<br>
     `loss`: PyTorch module, instantiated train loss class from [losses collection](https://nixtla.github.io/neuralforecast/losses.pytorch.html).<br>
     `valid_loss`: PyTorch module=`loss`, instantiated valid loss class from [losses collection](https://nixtla.github.io/neuralforecast/losses.pytorch.html).<br>
     `max_steps`: int=1000, maximum number of training steps.<br>
@@ -47,6 +49,10 @@ class GRU(BaseModel):
     `val_check_steps`: int=100, Number of training steps between every validation loss check.<br>
     `batch_size`: int=32, number of differentseries in each batch.<br>
     `valid_batch_size`: int=None, number of different series in each validation and test batch.<br>
+    `windows_batch_size`: int=128, number of windows to sample in each training batch, default uses all.<br>
+    `inference_windows_batch_size`: int=1024, number of windows to sample in each inference batch, -1 uses all.<br>
+    `start_padding_enabled`: bool=False, if True, the model will pad the time series with zeros at the beginning, by input size.<br>
+    `step_size`: int=1, step size between each window of temporal data.<br>
     `scaler_type`: str='robust', type of scaler for temporal inputs normalization see [temporal scalers](https://nixtla.github.io/neuralforecast/common.scalers.html).<br>
     `random_seed`: int=1, random_seed for pytorch initializer and numpy generators.<br>
     `drop_last_loader`: bool=False, if True `TimeSeriesDataLoader` drops last non-full batch.<br>
@@ -72,7 +78,7 @@ class GRU(BaseModel):
         self,
         h: int,
         input_size: int = -1,
-        inference_input_size: int = -1,
+        inference_input_size: Optional[int] = None,
         encoder_n_layers: int = 2,
         encoder_hidden_size: int = 200,
         encoder_activation: Optional[str] = None,
@@ -102,6 +108,7 @@ class GRU(BaseModel):
         scaler_type: str = "robust",
         random_seed=1,
         drop_last_loader=False,
+        alias: Optional[str] = None,
         optimizer=None,
         optimizer_kwargs=None,
         lr_scheduler=None,
@@ -115,6 +122,7 @@ class GRU(BaseModel):
         super(GRU, self).__init__(
             h=h,
             input_size=input_size,
+            inference_input_size=inference_input_size,
             futr_exog_list=futr_exog_list,
             hist_exog_list=hist_exog_list,
             stat_exog_list=stat_exog_list,
@@ -135,6 +143,7 @@ class GRU(BaseModel):
             scaler_type=scaler_type,
             random_seed=random_seed,
             drop_last_loader=drop_last_loader,
+            alias=alias,
             optimizer=optimizer,
             optimizer_kwargs=optimizer_kwargs,
             lr_scheduler=lr_scheduler,
